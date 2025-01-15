@@ -1,0 +1,40 @@
+image: maven:3.8.6-jdk-17
+
+pipelines:
+  default:
+    - step:
+        name: Build, Test, and Deploy to Elastic Beanstalk
+        caches:
+          - maven
+        script:
+          - echo "Starting build and deploy process"
+
+          # Install AWS CLI (if not already installed in the image)
+          - apt-get update && apt-get install -y awscli
+
+          # Set AWS credentials as environment variables
+          - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+          - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+          - export AWS_DEFAULT_REGION=us-east-1
+
+          # Build the application
+          - mvn clean install
+
+          # Run tests (optional, can be skipped if not needed)
+          - mvn test
+
+          # Package the application into a .jar or .war file (based on your project setup)
+          - mvn package -DskipTests
+
+          # Zip the application for deployment
+          - zip -r authors.zip target/*.jar
+
+          # Upload the zip file to S3 bucket
+          - aws s3 cp authors.zip s3://my-app-bucket/authors.zip
+
+          # Deploy to Elastic Beanstalk using AWS CLI
+          - aws elasticbeanstalk create-application-version --application-name AuthorAPI --version-label v1 --source-bundle S3Bucket=my-app-bucket,S3Key=authors.zip
+          - aws elasticbeanstalk update-environment --environment-name YourEnvironmentName --version-label v1
+
+        artifacts:
+          - target/*.jar

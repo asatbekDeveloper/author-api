@@ -32,6 +32,7 @@ public class AuthorController {
     @GetMapping("/{authorId}/works")
     @Operation(summary = "API ID: Author002")
     public List<Work> searchWorksByAuthorId(@PathVariable String authorId) {
+
         return authorService.searchWorksByAuthorId(authorId);
     }
 

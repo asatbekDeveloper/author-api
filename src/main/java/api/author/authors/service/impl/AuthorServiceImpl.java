@@ -23,19 +23,20 @@ import java.util.Optional;
 public class AuthorServiceImpl implements AuthorService {
 
     private final AuthorRepository authorRepository;
-
     private final WorkRepository workRepository;
-
     private final RestTemplate restTemplate;
+    private static final String OPEN_LIBRARY_API_URL = "https://openlibrary.org";
 
 
     public Author searchAuthorByName(String name) {
-        Optional<Author> author = authorRepository.findByName(name);
-        if (author.isPresent()) {
-            return author.get();
-        }
 
-        String url = "https://openlibrary.org/search/authors.json?q=" + name;
+        Optional<Author> author = authorRepository.findByName(name);
+        return author.orElseGet(() -> fetchAuthorFromApi(name));
+    }
+
+
+    private Author fetchAuthorFromApi(String name) {
+        String url = OPEN_LIBRARY_API_URL + "/search/authors.json?q=" + name;
         var response = restTemplate.getForObject(url, Map.class);
         if (response != null && response.containsKey("docs")) {
             var docs = (List<Map<String, Object>>) response.get("docs");
@@ -56,16 +57,19 @@ public class AuthorServiceImpl implements AuthorService {
         throw new RuntimeException("Author not found");
     }
 
+
     public List<Work> searchWorksByAuthorId(String openLibraryId) {
 
         Author author = findByOpenLibraryIdIfNotExistSaveAuthor(openLibraryId);
 
         List<Work> works = workRepository.findByAuthorId(author.getId());
-        if (!works.isEmpty()) {
-            return works;
-        }
+        if (!works.isEmpty()) return works;
 
-        String url = "https://openlibrary.org/authors/" + openLibraryId + "/works.json";
+        return fetchAuthorWorkFromApi(openLibraryId, author);
+    }
+
+    private List<Work> fetchAuthorWorkFromApi(String openLibraryId, Author author) {
+        String url = OPEN_LIBRARY_API_URL + "/authors/" + openLibraryId + "/works.json";
         var response = restTemplate.getForObject(url, Map.class);
         if (response != null && response.containsKey("entries")) {
             var entries = (List<Map<String, Object>>) response.get("entries");
@@ -78,15 +82,13 @@ public class AuthorServiceImpl implements AuthorService {
         }
 
         return workRepository.findByAuthorId(author.getId());
-
-
     }
 
     public Author findByOpenLibraryIdIfNotExistSaveAuthor(String openLibraryId) {
         Author author = isAuthorExistByOpenLibraryId(openLibraryId);
 
         if (Objects.isNull(author)) {
-            String url = "https://openlibrary.org/authors/" + openLibraryId + ".json";
+            String url = OPEN_LIBRARY_API_URL + "/authors/" + openLibraryId + ".json";
             var response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.containsKey("personal_name")) {
                 String authorName = (String) response.get("personal_name");
