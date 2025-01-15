@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    username: root
+    url: jdbc:mysql://localhost:3306/author_db
+    password: root
+  application:
+    name: authors
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: 'true'
