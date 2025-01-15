@@ -41,14 +41,14 @@ This project provides two RESTful API endpoints to search for authors and their 
    ```yaml
    spring:
      datasource:
-       url: jdbc:mysql://localhost:3306/author_api
+       url: jdbc:mysql://localhost:3306/author_db
        username: root
        password: your_password
      liquibase:
        change-log: classpath:db/changelog/db.changelog-master.xml
      jpa:
        hibernate:
-         ddl-auto: none
+         ddl-auto: validate
    ```
 
 3. **Run Liquibase Migrations**:
